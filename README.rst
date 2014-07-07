@@ -47,6 +47,8 @@ Ubuntu Linux
 
 Open a terminal and type the following commands:
 
+.. code:: bash
+
     sudo apt-get install python python-kivy
     git clone https://github.com/spillz/37.6
     cd 37.6
