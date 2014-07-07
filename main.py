@@ -451,7 +451,7 @@ class GameMenu(ScreenManager):
     def start_game(self, *args):
         player_spec = []
         for x in range(self.player_count):
-            player_spec.append(PlayerSpec(str(x), color_lookup[x], self.players[x]))
+            player_spec.append(PlayerSpec('Player '+str(x+1), color_lookup[x], self.players[x]))
         self.w_game.children[0].add_players(player_spec)
         self.w_game.children[0].start_game()
         self.current = 'game'
