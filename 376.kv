@@ -173,8 +173,10 @@
         text: 'Computer'
     CheckBox:
         id: network
+        disabled: True
         group: root.group_id
     Label:
+        disabled: True
         text: 'Net Player'
         
 <GameMenu>:
@@ -194,6 +196,7 @@
                     text: 'Start Game'
                     on_press: root.current ='host_game'
                 Button:
+                    disabled: True
                     size: [0.5*root.size[0], 0.2*root.size[1]]
                     text: 'Join Network Game'
                     on_press: root.current = 'join_game'
