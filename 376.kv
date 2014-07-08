@@ -175,7 +175,7 @@
         id: network
         group: root.group_id
     Label:
-        text: 'Network Player'
+        text: 'Net Player'
         
 <GameMenu>:
     w_game: game
@@ -184,67 +184,98 @@
     players: [player1.value, player2.value, player3.value, player4.value, player5.value]
     Screen:
         name: 'main'
-        BoxLayout:
-            orientation: 'vertical'
-            Button:
-                size: [0.5*root.size[0], 0.2*root.size[1]]
-                text: 'Start Game'
-                on_press: root.current ='local_game'
-            Button:
-                size: [0.5*root.size[0], 0.2*root.size[1]]
-                text: 'Join Network Game'
-                on_press: root.current = 'network_game'
+        RelativeLayout:
+            BoxLayout:
+                size_hint: [0.5, 0.2]
+                pos_hint: {'center_x':0.5, 'y':0.1}
+                orientation: 'vertical'
+                Button:
+                    size: [0.5*root.size[0], 0.2*root.size[1]]
+                    text: 'Start Game'
+                    on_press: root.current ='host_game'
+                Button:
+                    size: [0.5*root.size[0], 0.2*root.size[1]]
+                    text: 'Join Network Game'
+                    on_press: root.current = 'join_game'
     Screen:
-        name: 'local_game'
-        GridLayout:
-            cols: 2
-            Label:
-                text: 'Players'
-            PlayerCountChooser:
-                id: player_count
-            Label:
-                text: 'Player 1'
-            PlayerChooser:
-                id: player1
-                group_id: 'player1'
-            Label:
-                text: 'Player 2'
-            PlayerChooser:
-                id: player2
-                group_id: 'player2'
-            Label:
-                disabled: player_count.value<3
-                text: 'Player 3'
-            PlayerChooser:
-                disabled: player_count.value<3
-                id: player3
-                group_id: 'player3'
-            Label:
-                disabled: player_count.value<4
-                text: 'Player 4'
-            PlayerChooser:
-                disabled: player_count.value<4
-                id: player4
-                group_id: 'player4'
-            Label:
-                disabled: player_count.value<5
-                text: 'Player 5'
-            PlayerChooser:
-                disabled: player_count.value<5
-                id: player5
-                group_id: 'player5'
-            Button:
-                text: 'Back'
-                on_press: root.current = 'main'
-            Button:
-                text: 'Start'
-                id: start_button
+        name: 'host_game'
+        RelativeLayout:
+            size_hint: [0.8, 0.8]
+            pos_hint: {'center_x':0.5, 'center_y':0.5}
+            GridLayout:
+                cols: 2
+                cols_minimum: {0: 0.2}
+                cols_minimum: {1: 0.2}
+                Label:
+                    text: 'Players'
+                PlayerCountChooser:
+                    id: player_count
+                Label:
+                    text: 'Player 1'
+                PlayerChooser:
+                    id: player1
+                    group_id: 'player1'
+                Label:
+                    text: 'Player 2'
+                PlayerChooser:
+                    id: player2
+                    group_id: 'player2'
+                Label:
+                    disabled: player_count.value<3
+                    text: 'Player 3'
+                PlayerChooser:
+                    disabled: player_count.value<3
+                    id: player3
+                    group_id: 'player3'
+                Label:
+                    disabled: player_count.value<4
+                    text: 'Player 4'
+                PlayerChooser:
+                    disabled: player_count.value<4
+                    id: player4
+                    group_id: 'player4'
+                Label:
+                    disabled: player_count.value<5
+                    text: 'Player 5'
+                PlayerChooser:
+                    disabled: player_count.value<5
+                    id: player5
+                    group_id: 'player5'
+                Button:
+                    text: 'Back'
+                    on_press: root.current = 'main'
+                Button:
+                    text: 'Start'
+                    id: start_button
     Screen:
-        name: 'network_game'
+        name: 'join_game'
         BoxLayout:
             orientation: 'horizontal'
             Button:
                 text: 'Back'
+                on_press: root.current = 'main'
+    Screen:
+        name: 'pause'
+        RelativeLayout:
+            Label:
+                text: 'Paused'
+                font_size: 0.2*root.size[1]
+                pos_hint: {'center_x':0.5, 'center_y':0.8}
+                size_hint: (0.4,0.2)
+            Button:
+                text: 'Back to game'
+                size_hint: (0.4, 0.1)
+                pos_hint: {'center_x':0.5, 'center_y':0.5}
+                on_press: root.current = 'game'
+            Button:
+                size_hint: (0.4, 0.1)
+                text: 'Restart game'
+                pos_hint: {'center_x':0.5, 'center_y':0.4}
+                on_press: root.start_game()
+            Button:
+                size_hint: (0.4, 0.1)
+                text: 'Exit to menu'
+                pos_hint: {'center_x':0.5, 'center_y':0.3}
                 on_press: root.current = 'main'
     Screen:
         name: 'game'

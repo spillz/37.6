@@ -16,7 +16,6 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.widget import Widget
-from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 from kivy.app import App
 from kivy.properties import ObjectProperty, StringProperty, ReferenceListProperty, NumericProperty, BooleanProperty, ListProperty
@@ -24,6 +23,7 @@ from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
 from kivy.graphics import Rectangle, Color
 from kivy.clock import Clock
+from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.vector import Vector
 
@@ -38,12 +38,13 @@ class Die(Widget):
     die_color = ListProperty()
     spot_color = ListProperty()
     
-    def __init__(self, board, 
+    def __init__(self, board, player, 
             die_color = [1.0, 0.0, 0.0, 1.0], 
             spot_color = [1.0, 1.0, 0.0, 1.0],
              **kwargs):
         super(Die,self).__init__(**kwargs)
         self.board = board
+        self.player = player
         self.value = random.choice(range(6))
         self.die_color = die_color
         self.spot_color = spot_color
@@ -109,6 +110,7 @@ class Board(FloatLayout):
         self.players = []
         self.scoreboard = ScoreBoard()
         self.add_widget(self.scoreboard)
+        self.game_over = False
 
     def remove_players(self):
         self.active_player = -1
@@ -117,8 +119,16 @@ class Board(FloatLayout):
             p.delete()
         self.players = []
         
-    def add_players(self, player_spec):
+    def reset_tiles(self):
+        if self.tiles is not None:
+            for hp in self.tiles:
+                self.remove_widget(self.tiles[hp])
+            self.tiles = None
+
+    def setup_game(self, player_spec):
+        self.game_over = False
         self.remove_players()
+        self.reset_tiles()
         if len(player_spec)==2:
             self.board_hex_count = 7
         else:
@@ -150,22 +160,20 @@ class Board(FloatLayout):
         scores = [p.score_marker.score for p in self.players]
         hi_score = max(scores)
         winners = [self.players[z].name for (z,s) in zip(range(len(self.players)), scores) if s == hi_score]
-        g = GameOver(board = self, winner_names = winners, size = (self.size[0]/2, self.size[1]/2))
-        g.open()
+        self.game_over = True
+#        g = GameOver(board = self, winner_names = winners, size = (self.size[0]/2, self.size[1]/2))
+#        g.open()
 
-    def exit_game(self):
-        gameapp.stop()
-
-    def reset_game(self):
-        self.active_player = -1
-        self.selected_die = None
-        for p in self.players:
-            p.reset()
-        for hp in self.tiles:
-            t = self.tiles[hp]
-            t.die = None
-            t.color = t.default_color
-        self.next_player()
+#    def reset_game(self):
+#        self.active_player = -1
+#        self.selected_die = None
+#        for p in self.players:
+#            p.reset()
+#        for hp in self.tiles:
+#            t = self.tiles[hp]
+#            t.die = None
+#            t.color = t.default_color
+#        self.next_player()
 
     def size_changed(self,*args):
         if self.tiles is None:
@@ -262,7 +270,11 @@ class Board(FloatLayout):
                         score +=1
             p.score_marker.score = score
 
-    def on_touch_down_tile(self, tile, touch):
+    def place_die(self, tile):
+        '''
+        called by touch handler for local player, or by AI or network 
+        player to place the selected die on a tile
+        '''
         if self.selected_die is not None:
             hex_pos = tile.hex_pos
             if self.tiles[(hex_pos[0], hex_pos[1])].die is not None:
@@ -274,8 +286,12 @@ class Board(FloatLayout):
             self.update_scores()
             self.selected_die = None
             self.next_player()
-         
-    def on_touch_down_die(self, die, touch):
+
+    def select_die(self, die):
+        '''
+        called by touch handler for local player, or by AI or network 
+        player to select a die
+        '''
         if self.selected_die is None and die in self.players[self.active_player].dice:
             if die.hex_pos != [-1, -1]:
                 t = self.tiles[(die.hex_pos[0], die.hex_pos[1])]
@@ -286,22 +302,16 @@ class Board(FloatLayout):
             self.selected_die = die
             return True
         return False
-
-class GameOver(Popup):
-    winner_names = ListProperty()
-
-    def __init__(self, board, winner_names, **kwargs):
-        super(GameOver, self).__init__(**kwargs)
-        self.board = board
-        self.winner_names = winner_names
-
-    def on_exit(self, *args):
-        self.dismiss()
-        self.board.exit_game()
-
-    def on_replay(self, *args):
-        self.dismiss()
-        self.board.reset_game()
+    
+    def on_touch_down_tile(self, tile, touch):
+        if self.game_over:
+            return True
+        return self.place_die(tile)
+    
+    def on_touch_down_die(self, die, touch):
+        if self.game_over:
+            return True
+        return self.select_die(die)
     
 class ScoreBoard(BoxLayout):
     def __init__(self):
@@ -319,14 +329,14 @@ class PlayerScore(FloatLayout):
         self.ident = identity
         self.color = color
 
-class Player:
+class Player(object):
     def __init__(self, name, color, board):
         self.local_control = True
         self.name = name
         self.color = color
         self.board = board
-        self.die_count = 12
-        self.dice = [Die(board, die_color = color) for x in range(12)]
+        self.dice_count = 12
+        self.dice = [Die(board, self, die_color = color) for x in range(12)]
         self.score_marker = PlayerScore(identity = self.name[0:2], color = color)
         self.board.scoreboard.add_widget(self.score_marker)
 
@@ -340,7 +350,7 @@ class Player:
     def reset(self):
         self.score_marker.active_turn = False
         self.score_marker.score = 0
-        for x,d in zip(range(self.die_count),self.dice):
+        for x,d in zip(range(self.dice_count),self.dice):
             if d.hex_pos != [-1, -1]:
                 self.board.remove_widget(d)
             d.hex_pos = [-1, -1]
@@ -363,7 +373,7 @@ class Player:
                 self.board.remove_widget(d)
     
     def board_resize(self, pos, board_size, hex_side):
-        for x, d in zip(range(self.die_count), self.dice):
+        for x, d in zip(range(self.dice_count), self.dice):
             d.size = (hex_side, hex_side)
             if d.hex_pos != [-1, -1]:
                 d.center = self.board.pixel_pos(d.hex_pos)
@@ -376,30 +386,91 @@ class Player:
 
 class AIPlayer(Player):
     def __init__(self, name, color, board):
-        super(AIPlayer, self).__init__(self, name, color, board)
+        super(AIPlayer, self).__init__(name, color, board)
         self.local_control = False
 
-    def evaluate_choose(self):
-        self.choose_score = {}
-        for d in self.die:
-            pass
+    def score_die(self, value, hex_pos):
+        placed = len([t for t in self.board.neighbor_iter(hex_pos) if t.die is not None])
+        score = value - placed
+        if score == 0:
+            score = 2
+        elif score >= 1 and placed > 0:
+            score = 1
+        elif score == -1:
+            score = -1
+        else:
+            score = 0
+        return score
 
-    def evaluate_place(self):
-        self.scoreable = {}
-        for hp in self.board.tiles:
-            self.scoreable[hp] = self.board.neighbor_iter(hp)
-
-    def choose_die(self):
-        '''
-        tells player to choose a die
-        '''
-        pass
+    def start_turn(self):
+        super(AIPlayer, self).start_turn()
+        die = self.evaluate_die_select()
+        print 'selecting',die.hex_pos
+        self.board.select_die(die)
+        Clock.schedule_once(self.place_turn, 0.5)
     
-    def place_die(self):
-        '''
-        tells player to place his selected die
-        '''
-        pass
+    def place_turn(self, *args):
+        tile = self.evaluate_die_place()
+        print 'placing',tile.hex_pos
+        self.board.place_die(tile)
+
+    def evaluate_die_select(self):
+        #TODO: if this takes time, chunk it up and call repeatedly using a timer
+        select_scores = []
+        print 'die_select'
+        for x,d in zip(range(self.dice_count), self.dice):
+            if d.hex_pos != [-1, -1]:
+                score = -self.score_die(d.value, d.hex_pos) ##TODO: incentive to do this is not strong while score is low
+                if score>0:
+                    score=0
+                self.board.neighbor_iter(d.hex_pos)
+                for t in self.board.neighbor_iter(d.hex_pos):
+                    if t.die is not None:
+                        if t.die.player == self:
+                            score -= self.score_die(t.die.value, t.die.hex_pos) ##TODO: only give weight to players with scores above, say, 4
+                        else:
+                            if t.die.player.score_marker.score > 3:
+                                score += self.score_die(t.die.value, t.die.hex_pos) ##TODO: only give weight to players with scores above, say, 4
+            else:
+                if max([p.score_marker.score for p in self.board.players])>4:
+                    score = 0
+                else:
+                    score = 2
+            print d.hex_pos,score
+            select_scores.append(score)
+        max_score = max(select_scores)
+        candidates = [self.dice[x] for x in range(self.dice_count) if select_scores[x] == max_score]
+        print max_score
+        return random.choice(candidates)
+            
+    def evaluate_die_place(self):
+        #TODO: if this takes time, chunk it up and call repeatedly using a timer
+        value = self.board.selected_die.value
+        max_score = -1000
+        candidates = []
+        print 'die_place'
+        for hp in self.board.tiles:
+            t = self.board.tiles[hp]
+            if t.die is None:
+                score = self.score_die(value, hp)
+                n = list(self.board.neighbor_iter(hp))
+                if value > len(n) and score > 0:
+                    score = 0
+                for t1 in n:
+                    if t1.die is not None:
+                        if t1.die.player == self:
+                            score += self.score_die(t1.die.value, t1.die.hex_pos) ##TODO: only give weight to players with scores above, say, 4
+                        else:
+                            score -= self.score_die(t1.die.value, t1.die.hex_pos) 
+                if score == max_score:
+                    candidates.append(t)
+                elif score > max_score:
+                    candidates = [t]
+                    max_score = score
+                print hp, score
+        print max_score
+        return random.choice(candidates)
+
     
 class NetworkPlayer(Player):
     def __init__(self, name, color, board):
@@ -452,15 +523,37 @@ class GameMenu(ScreenManager):
         player_spec = []
         for x in range(self.player_count):
             player_spec.append(PlayerSpec('Player '+str(x+1), color_lookup[x], self.players[x]))
-        self.w_game.children[0].add_players(player_spec)
+        self.w_game.children[0].setup_game(player_spec)
         self.w_game.children[0].start_game()
         self.current = 'game'
 
 class GameApp(App):
     def build(self):
-        gm = GameMenu()
-        gm.w_game.add_widget(Board())
-        return gm
+        self.gm = GameMenu()
+        self.gm.w_game.add_widget(Board())
+        Window.bind(on_keyboard = self.on_keyboard)
+        return self.gm
+
+    def on_keyboard(self, window, key, scancode=None, codepoint=None, modifier=None):
+        '''
+        used to manage the effect of the escape key
+        '''
+        if key == 27:
+            if self.gm.current == 'main':
+                return False
+            elif self.gm.current == 'host_game':
+                self.gm.current = 'main'
+            elif self.gm.current == 'join_game':
+                self.gm.current = 'main'
+            elif self.gm.current == 'game':
+                self.gm.current = 'pause'
+            elif self.gm.current == 'pause':
+                self.gm.current = 'game'
+            return True
+        return False
+
+    def on_stop(self):
+        print('stop')
 
 if __name__ == '__main__':
     Builder.load_file('376.kv')
