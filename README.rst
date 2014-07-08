@@ -12,27 +12,31 @@ Rules
 
 For two to five players (the official version of the game is for two players)
 
-1. Each player has 12 dice that are placed in a stack
-   to the side of the board
-2. Players take turns to select and place a single die
-3. Select: player may selects one of their die
-   from the stack or from the hex board
-4. The selected die is rolled.
-5. Place: The player then selects an empty spot on the board
-   to place his or her die.
-6. A player scores a point for each die on the board
+1. **Setup**: Each player has 12 dice that are placed in a stack
+   to the side of an empty hex board.
+
+2. **Action**: Players take turns to **select** and then **place** a die.
+    
+    - **Select**: player selects and rolls one of their dice
+      from the stack or from the hex board.
+
+    - **Place**: The player then places the selected die on an 
+      empty spot on the board.
+
+3. **Scoring**: A player scores a point for each die on the board
    that has neighboring dice equal in number to the
    value in the face of the die (e.g. if the die face
-   is a 2 you will score a point for that die if it has
-   exactly 2 neighboring die).
-7. The player with the most points the first time any
+   is a 2 the player will score a point for that die 
+   if it has exactly 2 neighboring die).
+
+4. **Winning**: The player with the most points the first time any
    player reaches 6 points is the winner (the scoreboard
-   is displayed at the top right of the screen)
+   is displayed at the top right of the screen).
 
 For more information: http://boardgamegeek.com/thread/1167751/376-game-under-open-license-here/page/1
 
-How to Play
-===========
+How to Install and Play the Game
+================================
 
 Android
 -------
@@ -63,13 +67,12 @@ Windows
 TODOs
 =====
 
-1. AI players (choosing this option will probably crash the game)
-2. Network players (choosing this option will probably crash the game)
-3. Placement Animations
-4. Game Persistence
-5. Sound effects
-6. UI tidy up (menus, graphics)
-7. Player customiztion (names, colors, profiles)
-8. Binary Packages
+1. Smarter AI players
+2. Network players (options are currently disabled)
+3. Game Persistence
+4. Sound effects
+5. UI tidy up (menus, graphics)
+6. Player customiztion (names, colors, profiles)
+7. Binary Packages
    
 See the LICENSE file for copyright information
