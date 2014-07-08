@@ -478,7 +478,7 @@ class AIPlayer(Player):
                 print score,
                 n = list(self.board.neighbor_iter(hp))
                 if value > len(n) and score > 0:
-                    score -= 1
+                    score -= 2
                     print score,
                 for t1 in n:
                     if t1.die is not None:
