@@ -6,7 +6,9 @@ An electronic version of Artem Borovkov's 37.6
 .. image:: screenshots/37.6.png
    :align: center
    :scale: 50 %
-   
+
+Youtube: http://youtu.be/z4mxD9EQsJs
+      
 Rules
 =====
 
