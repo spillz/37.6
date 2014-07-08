@@ -152,7 +152,7 @@ class Board(FloatLayout):
     def next_player(self):
         if self.active_player >= 0:
             self.players[self.active_player].end_turn()
-            if self.players[self.active_player].score_marker.score>=6:
+            if max([p.score_marker.score for p in self.players])>=6:
                 self.show_game_over()
                 return
         self.active_player +=1
@@ -279,7 +279,7 @@ class Board(FloatLayout):
         called by touch handler for local player, or by AI or network 
         player to place the selected die on a tile
         '''
-        if self.selected_die is not None:
+        if not self.game_over and self.selected_die is not None:
             hex_pos = tile.hex_pos
             if self.tiles[(hex_pos[0], hex_pos[1])].die is not None:
                 return
@@ -296,7 +296,7 @@ class Board(FloatLayout):
         called by touch handler for local player, or by AI or network 
         player to select a die
         '''
-        if self.selected_die is None and die in self.players[self.active_player].dice:
+        if not self.game_over and self.selected_die is None and die in self.players[self.active_player].dice:
             if die.hex_pos != [-1, -1]:
                 t = self.tiles[(die.hex_pos[0], die.hex_pos[1])]
                 t.die = None
@@ -423,13 +423,13 @@ class AIPlayer(Player):
 
     def start_turn(self):
         super(AIPlayer, self).start_turn()
-        Clock.schedule_once(self.select_turn, 0.5)
+        Clock.schedule_once(self.select_turn, 0.7)
     
     def select_turn(self, *args):
         die = self.evaluate_die_select()
         print 'selecting',die.hex_pos
         self.board.select_die(die)
-        Clock.schedule_once(self.place_turn, 0.5)
+        Clock.schedule_once(self.place_turn, 0.7)
     
     def place_turn(self, *args):
         tile = self.evaluate_die_place()
