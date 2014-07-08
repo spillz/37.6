@@ -8,6 +8,6 @@ face_coords = [
     ]
 
 def face_spot_lookup(center_x, center_y, size_x, size_y, spot_width, spot_height, value, spot):
-    fc = face_coords[value][spot]
+    fc = face_coords[value - 1][spot - 1]
     return (center_x +fc[0]*size_x/2 - spot_width/2, center_y +fc[1]*size_y/2 - spot_height/2)
 

@@ -19,9 +19,6 @@
             rgba: self.spot_color
         Ellipse:
             size: (self.spot_width, self.spot_height)
-            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 0)
-        Ellipse:
-            size: (self.spot_width, self.spot_height)
             pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 1)
         Ellipse:
             size: (self.spot_width, self.spot_height)
@@ -35,6 +32,9 @@
         Ellipse:
             size: (self.spot_width, self.spot_height)
             pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 5)
+        Ellipse:
+            size: (self.spot_width, self.spot_height)
+            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 6)
 
 <HexTile>:
     color: (0.5,0.5,0.5,1.0)
