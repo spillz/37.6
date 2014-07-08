@@ -26,6 +26,7 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.vector import Vector
+from kivy.animation import Animation
 
 class Die(Widget):
     value = NumericProperty()
@@ -57,8 +58,10 @@ class Die(Widget):
     def place(self, hex_pos, center_pos):
         if self.selected:
             self.hex_pos = hex_pos
-            self.center = center_pos
+#            self.center = center_pos
             self.selected = False
+            a = Animation(center_x = center_pos[0], center_y = center_pos[1], duration = 0.2)
+            a.start(self)
             #TODO: Start animation to move die to bottom left
     
     def on_touch_down(self, touch):
@@ -71,7 +74,8 @@ class Die(Widget):
         if value == True:
             self.roll()
             self.hex_pos = [-1, -1]
-            self.pos = self.board.select_pos
+            a = Animation(x = self.board.select_pos[0], y = self.board.select_pos[1], duration = 0.2)
+            a.start(self)
 
 class HexTile(Widget):
     hex_width = NumericProperty()
