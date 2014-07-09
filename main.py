@@ -183,7 +183,7 @@ class Board(FloatLayout):
         if self.tiles is None:
             self.tiles = {}
             for x in range(self.board_hex_count):
-                y_height = int(self.board_hex_count - abs((self.board_hex_count-1)/2-x))
+                y_height = self.board_hex_count - abs((self.board_hex_count-1)//2-x)
                 for y in range(y_height):
                     pos = self.pixel_pos((x,y))
                     pos = (pos[0] - self.hex_side, pos[1] - self.hex_side)
@@ -197,7 +197,7 @@ class Board(FloatLayout):
 #            self.next_player()
         else:
             for x in range(self.board_hex_count):
-                y_height = int(self.board_hex_count - abs((self.board_hex_count-1)/2-x))
+                y_height = self.board_hex_count - abs((self.board_hex_count-1)//2-x)
                 for y in range(y_height):
                     pos = self.pixel_pos((x,y))
                     pos = (pos[0] - self.hex_side, pos[1] - self.hex_side)
