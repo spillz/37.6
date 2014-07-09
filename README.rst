@@ -27,7 +27,7 @@ For two to five players (the official version of the game is for two players)
 
 3. **Scoring**: A player scores a point for each die on the board
    that has neighboring dice equal in number to the
-   value in the face of the die (e.g. if the die face
+   face value the die (e.g. if the die face
    is a 2 the player will score a point for that die 
    if it has exactly 2 neighboring die).
 
@@ -55,7 +55,7 @@ Open a terminal and type the following commands:
 
 .. code:: bash
 
-    sudo apt-get install python python-kivy
+    sudo apt-get install git python python-kivy
     git clone https://github.com/spillz/37.6
     cd 37.6
     python main.py
