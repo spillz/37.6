@@ -1,6 +1,7 @@
 #:kivy 1.0
 
 #:import face_spot_lookup helpers.face_spot_lookup
+#:import SlideTransition kivy.uix.screenmanager.SlideTransition
 
 <Die>:
     value: 1
@@ -47,22 +48,22 @@
         Color:
             rgba: self.color
         #top
-        Triangle: 
+        Triangle:
             points: [self.center_x, self.center_y, self.center_x - self.hex_len/2, self.center_y - self.hex_height/2, self.center_x + self.hex_len/2, self.center_y - self.hex_height/2]
         #topright
-        Triangle: 
+        Triangle:
             points: [self.center_x, self.center_y, self.center_x + self.hex_len/2, self.center_y - self.hex_height/2, self.center_x + self.hex_len, self.center_y]
         #bottomright
-        Triangle: 
+        Triangle:
             points: [self.center_x, self.center_y, self.center_x + self.hex_len, self.center_y, self.center_x + self.hex_len/2, self.center_y + self.hex_height/2]
         #bottom
-        Triangle: 
+        Triangle:
             points: [self.center_x, self.center_y, self.center_x + self.hex_len/2, self.center_y + self.hex_height/2, self.center_x - self.hex_len/2, self.center_y + self.hex_height/2]
         #bottomleft
-        Triangle: 
+        Triangle:
             points: [self.center_x, self.center_y, self.center_x - self.hex_len/2, self.center_y + self.hex_height/2, self.center_x - self.hex_len, self.center_y]
         #topleft
-        Triangle: 
+        Triangle:
             points: [self.center_x, self.center_y, self.center_x - self.hex_len, self.center_y, self.center_x - self.hex_len/2, self.center_y - self.hex_height/2]
         #border
         Color:
@@ -100,7 +101,7 @@
         size: root.size[0]/2, root.size[0]/2
         text: str(root.score)
         color: root.color
-            
+
 <Board>:
     board_hex_count: 7
     hex_side: min(self.size[0]/(1.5 * self.board_hex_count + 1), 0.95*self.size[1]/(self.board_hex_count * 3**0.5))
@@ -178,12 +179,13 @@
     Label:
         disabled: True
         text: 'Net Player'
-        
+
 <GameMenu>:
     w_game: game
     w_start_button: start_button
     player_count: player_count.value
     players: [player1.value, player2.value, player3.value, player4.value, player5.value]
+    transition: SlideTransition(direction = 'down')
     Screen:
         name: 'main'
         RelativeLayout:
