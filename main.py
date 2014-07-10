@@ -53,7 +53,7 @@ class Die(Widget):
         self.bind(selected = self.on_selected)
 
     def roll(self):
-        self.value = random.choice(range(6)) + 1
+         self.value = random.choice(range(6)) + 1
 
     def place(self, hex_pos, center_pos):
         if self.selected:
@@ -216,23 +216,23 @@ class Board(FloatLayout):
         '''
         returns center of hex at position represented by the tuple `hex_pos`
         '''
-        return (self.center_x + self.hex_side * 1.5 * (hex_pos[0] - self.board_hex_count/2),
-                self.center_y + self.hex_height * (hex_pos[1] - self.board_hex_count/2 + abs(hex_pos[0]-self.board_hex_count/2)/2.0) )
+        return (self.center_x + self.hex_side * 1.5 * (hex_pos[0] - self.board_hex_count//2),
+                self.center_y + self.hex_height * (hex_pos[1] - self.board_hex_count//2 + abs(hex_pos[0]-self.board_hex_count//2)/2.0) )
 
     def hex_pos(self, pixel_pos):
         '''
         returns hex position corresponding to x,y tuple in `pixel_pos`
         '''
-        hpos = int((pixel_pos[0] - self.center_x)/(self.hex_side * 1.5) + self.board_hex_count/2 + 0.5)
-        vpos = int((pixel_pos[1] - self.center_y)/self.hex_height + self.board_hex_count/2 - abs(hpos-self.board_hex_count/2)/2 + 0.5)
+        hpos = int((pixel_pos[0] - self.center_x)/(self.hex_side * 1.5) + self.board_hex_count//2 + 0.5)
+        vpos = int((pixel_pos[1] - self.center_y)/self.hex_height + self.board_hex_count//2 - abs(hpos-self.board_hex_count//2)//2 + 0.5)
         if 0<=hpos<self.board_hex_count and 0<=vpos<self.board_hex_count:
             return hpos, vpos
         else:
             return None
 
     def neighbor_iter(self, hex_pos):
-        y_offset_left = hex_pos[0]<=self.board_hex_count/2
-        y_offset_right = hex_pos[0]>=self.board_hex_count/2
+        y_offset_left = hex_pos[0]<=self.board_hex_count//2
+        y_offset_right = hex_pos[0]>=self.board_hex_count//2
         for x,y in [(0,-1), (0,+1), (-1,-y_offset_left), (-1,+1-y_offset_left), (+1,-y_offset_right), (+1,+1-y_offset_right)]:
             try:
                 yield self.tiles[(hex_pos[0]+x,hex_pos[1]+y)]
@@ -364,7 +364,7 @@ class Player(object):
             hex_side = self.board.hex_side
             board_size = self.board.size
             d.pos = (x%2 * (hex_side + 0.01*board_size[0]),
-                     board_size[1] - (1 + x/2) * (hex_side + 0.01*board_size[0]))
+                     board_size[1] - (1 + x//2) * (hex_side + 0.01*board_size[0]))
 
     def start_turn(self):
         self.score_marker.active_turn = True
@@ -388,7 +388,7 @@ class Player(object):
                     d.pos = self.board.select_pos
                 else:
                     d.pos = (x%2 * (hex_side + 0.01*board_size[0]),
-                             board_size[1] - (1 + x/2) * (hex_side + 0.01*board_size[0]))
+                             board_size[1] - (1 + x//2) * (hex_side + 0.01*board_size[0]))
 
 class AIPlayer(Player):
     def __init__(self, name, color, board):
