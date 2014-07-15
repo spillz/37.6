@@ -26,9 +26,9 @@ For two to five players (the official version of the game is for two players)
       empty spot on the board.
 
 3. **Lock Dice**: A die is locked if the face value of the die equals
-    the number of dice in neighboring hexes (e.g. if the die face
-    is a 2 that die is locked if exactly 2 neighboring dice). 
-    If a neighboring die to a locked die is removed, that die is no longer locked.
+   the number of dice in neighboring hexes (e.g. if the die face
+   is a 2 that die is locked if exactly 2 neighboring dice). 
+   If a neighboring die to a locked die is removed, that die is no longer locked.
 
 4. **Win with 6 Locked Dice**: The player with the most locked dice the first time any
    player reaches 6 locked dice is the winner (each player's locked dice
