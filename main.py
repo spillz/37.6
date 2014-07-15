@@ -7,6 +7,7 @@ Programmed by Damien Moore
 See LICENSE for licensing and copyright information
 '''
 import random
+import functools
 import kivy
 kivy.require('1.0.1')
 
@@ -276,7 +277,7 @@ class Board(FloatLayout):
                         score +=1
             p.score_marker.score = score
 
-    def place_die(self, tile):
+    def place_die(self, tile, server_check = True):
         '''
         called by touch handler for local player, or by AI or network
         player to place the selected die on a tile
@@ -285,6 +286,13 @@ class Board(FloatLayout):
             hex_pos = tile.hex_pos
             if self.tiles[(hex_pos[0], hex_pos[1])].die is not None:
                 return
+            if server_check:
+                try:
+                    if self.server is not None:
+                        self.server.send('place', (self.active_player, (int(hex_pos[0]), int(hex_pos[1]))))
+                        return True
+                except AttributeError:
+                    pass
             center_pos = self.pixel_pos(hex_pos)
             self.selected_die.place(hex_pos, center_pos)
             self.tiles[(hex_pos[0], hex_pos[1])].die = self.selected_die
@@ -292,30 +300,57 @@ class Board(FloatLayout):
             self.update_scores()
             self.selected_die = None
             self.next_player()
+            try:
+                if self.server is not None:
+                    self.server.notify_clients('s_place', (self.active_player, (int(hex_pos[0]), int(hex_pos[1]))))
+            except AttributeError:
+                pass
 
-    def select_die(self, die):
+    def select_die(self, die, roll_value = None):
         '''
         called by touch handler for local player, or by AI or network
         player to select a die
         '''
         if not self.game_over and self.selected_die is None and die in self.players[self.active_player].dice:
+            dice = self.players[self.active_player].dice
+            die_num = dice.index(die)
+            if roll_value is None:
+                try:
+                    if self.server is not None:
+                        self.server.send('select', (self.active_player, die_num))
+                        return True
+                except AttributeError:
+                    pass
             if die.hex_pos != [-1, -1]:
                 t = self.tiles[(die.hex_pos[0], die.hex_pos[1])]
                 t.die = None
                 self.update_tile_and_neighbors(t)
                 self.update_scores()
             die.selected = True
+            if roll_value is not None:
+                die.value = roll_value
             self.selected_die = die
-            return True
+            ##NOTIFY NETWORK PLAYERS
+            try:
+                if self.server is not None:
+                    self.server.notify_clients('s_select', (self.active_player, die_num, die.value))
+                return True
+            except AttributeError:
+                pass
         return False
+
 
     def on_touch_down_tile(self, tile, touch):
         if self.game_over:
+            return True
+        if not self.players[self.active_player].local_control:
             return True
         return self.place_die(tile)
 
     def on_touch_down_die(self, die, touch):
         if self.game_over:
+            return True
+        if not self.players[self.active_player].local_control:
             return True
         return self.select_die(die)
 
@@ -532,20 +567,13 @@ class AIPlayer(Player):
 
 class NetworkPlayer(Player):
     def __init__(self, name, color, board):
-        super(NetworkPlayer, self).__init__(self, name, color, board)
+        super(NetworkPlayer, self).__init__(name, color, board)
         self.local_control = False
+        self.queue = None
 
-    def choose_die(self):
-        '''
-        tells player to choose a die
-        '''
-        pass
+    def start_turn(self):
+        super(NetworkPlayer, self).start_turn()
 
-    def place_die(self):
-        '''
-        tells player to place his selected die
-        '''
-        pass
 
 class GameScreen(BoxLayout):
     def __init__(self):
@@ -567,23 +595,160 @@ color_lookup = {
     4: [0.5, 0.5, 0, 1],
     }
 
+GAME_PORT = 22126
+BROADCAST_PORT = 22127
+
 class GameMenu(ScreenManager):
     player_count = NumericProperty()
     players = ListProperty()
     w_game = ObjectProperty()
     w_start_button = ObjectProperty()
+    w_join_button = ObjectProperty()
+    w_join_game_box = ObjectProperty()
 
     def __init__(self):
         super(GameMenu, self).__init__()
         self.w_start_button.bind(on_release = self.start_game)
+        self.w_join_button.bind(on_release = self.find_network_game)
+        self.player_spec = []
+        self.server = None
+
+    def find_network_game(self, *args):
+        print('looking for network games')
+        import msocket
+        self.server = msocket.BroadcastClient('37.6', BROADCAST_PORT, callback = self.network_broadcaster_callback)
+        self.current = 'join_game'
+
+    def cancel_find_network_game(self, *args):
+        print 'cancel'
+        pass
+
+    def network_broadcaster_callback(self, *args):
+        Clock.schedule_once(functools.partial(self.network_game_found, *args))
+
+    def network_game_found(self, *args):
+        (ip, bport), (game_name, gport), dt = args
+        b = Button(text = game_name+' '+str(ip)+':'+str(gport), size_hint = (0.4,0.1))
+        self.w_join_game_box.add_widget(b)
+        b.bind(on_release = functools.partial(self.network_game_join, game_name, ip, gport))
+        ##TODO: instead of joining the first game found, just populate a list of games
+        ##      using the network_game_join as a callback from the list button press
+
+    def network_game_join(self, game_name, ip, gport, button):
+        import msocket
+        self.server.stop()
+        self.server = msocket.TurnBasedClient(game_name, ip, gport, self.server_callback)
+        self.server.send('hello',None)
+    
+    def start_network_server(self):
+        import msocket
+        self.server = msocket.TurnBasedServer('37.6', BROADCAST_PORT, GAME_PORT, self.num_network_players, callback = self.server_callback)
+
+    def cancel_host_wait(self, *args):
+        self.server.stop()
+        self.server = None
+
+    def server_callback(self, *args):
+        Clock.schedule_once(functools.partial(self.server_msg, *args))
+        
+    def server_msg(self, *args):
+        msg, data, dt = args
+        board = self.w_game.children[0]
+        if msg == 'players_joined': #all players have joined
+            net_players = [x for x in range(self.player_count) if self.players[x]==2]
+            self.server.queue.put(('player_ids',net_players))
+            self.start_network_game(self.player_spec)
+        elif msg == 'hello': #remote player says hello, send the initial game data
+            player_id, data = data
+            players_id = [x for x in range(len(board.players))]
+            board.players[player_id].queue.put(('s_hello', (player_id, players_id)))
+        elif msg == 's_hello': #data contains this players id and a list of player id's in turn order
+            player_id, players_id = data
+            spec = []
+            for x in range(len(players_id)):
+                ps = PlayerSpec('Player '+str(x), color_lookup[x], 0 if players_id[x] == player_id else 2)
+                spec.append(ps)
+            self.start_network_game(spec)
+        elif msg == 'select': #player wants to select a die
+            player_id, (pid, die_num) = data
+            p = board.players[pid]
+            die = p.dice[die_num]
+            board.select_die(die)
+            #self.server.send(player_id, True, die_num, die.value)
+        elif msg == 's_select': #notify player whether they have selected a die and the roll result
+            player_id, die_num, roll_value = data
+            p = board.players[player_id]
+            die = p.dice[die_num]
+            board.select_die(die, roll_value)
+        elif msg == 'place': #player wants to place a die
+            player_id, (pid, hex_pos) = data
+            t = board.tiles[hex_pos]
+            board.place_die(t)
+            #self.server.send(True, hex_pos)
+        elif msg == 's_place': #notify player whether the die has been placed
+            success, hex_pos = data
+            t = board.tiles[hex_pos]
+            board.place_die(t, False)
+        elif msg == 's_restart': #resposne to the game restart
+            #    data is success
+            self.start_network_game()
+        elif msg == 's_quitgame': #resposne to the game quit
+            #    data is success
+            self.start_network_game()
+            
+
+    def start_network_game(self, spec = None):
+        if spec is not None:
+            self.player_spec = spec
+        board = self.w_game.children[0]    
+        board.server = self.server
+        board.setup_game(self.player_spec)
+        board.start_game()
+        self.current = 'game'
+        try:
+            net_players = [x for x in range(self.player_count) if self.players[x]==2]
+            for x in range(len(net_players)):
+                board.players[net_players[x]].queue = self.server.players[x].queue
+        except AttributeError:
+            pass
+
+    def restart_game(self):
+        if self.server is not None:
+            try:
+                self.server.notify_clients('s_restart',None)
+            except AttributeError:
+                return False
+        board = self.w_game.children[0]    
+        board.setup_game(self.player_spec)
+        board.start_game()
+        try:
+            net_players = [x for x in range(self.player_count) if self.players[x]==2]
+            for x in range(len(net_players)):
+                board.players[net_players[x]].queue = self.server.players[x].queue
+        except AttributeError:
+            pass
+        self.current = 'game'
+        
+    def join_game(self, *args):
+        pass
 
     def start_game(self, *args):
-        player_spec = []
+        self.player_spec = []
+        self.num_network_players = 0
         for x in range(self.player_count):
-            player_spec.append(PlayerSpec('Player '+str(x+1), color_lookup[x], self.players[x]))
-        self.w_game.children[0].setup_game(player_spec)
-        self.w_game.children[0].start_game()
-        self.current = 'game'
+            ps = PlayerSpec('Player '+str(x+1), color_lookup[x], self.players[x])
+            if ps.type == 2:
+                self.num_network_players += 1
+            self.player_spec.append(ps)
+        if self.num_network_players > 0:
+            self.start_network_server()
+            self.current = 'host_wait'
+        else:
+            board = self.w_game.children[0]
+            board.server = None
+            board.setup_game(self.player_spec)
+            board.start_game()
+            self.current = 'game'
 
 class GameApp(App):
     def build(self):
@@ -601,7 +766,13 @@ class GameApp(App):
                 return False
             elif self.gm.current == 'host_game':
                 self.gm.current = 'main'
+            elif self.gm.current == 'host_wait':
+                self.gm.server.stop()
+                self.gm.server = None
+                self.gm.current = 'main'
             elif self.gm.current == 'join_game':
+                self.gm.server.stop()
+                self.gm.server = None
                 self.gm.current = 'main'
             elif self.gm.current == 'game':
                 self.gm.current = 'pause'
@@ -620,7 +791,9 @@ class GameApp(App):
         pass
 
     def on_stop(self):
-        print('stop')
+        print('app stop')
+        if self.gm.server is not None:
+            self.gm.server.stop()
 
 if __name__ == '__main__':
     Builder.load_file('376.kv')

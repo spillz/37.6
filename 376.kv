@@ -174,15 +174,15 @@
         text: 'Computer'
     CheckBox:
         id: network
-        disabled: True
         group: root.group_id
     Label:
-        disabled: True
         text: 'Net Player'
 
 <GameMenu>:
     w_game: game
     w_start_button: start_button
+    w_join_button: join_button
+    w_join_game_box: join_game_box
     player_count: player_count.value
     players: [player1.value, player2.value, player3.value, player4.value, player5.value]
     transition: SlideTransition(direction = 'down')
@@ -238,10 +238,9 @@
                     text: 'Start Game'
                     on_press: root.current ='host_game'
                 Button:
-                    disabled: True
                     size: [0.5*root.size[0], 0.2*root.size[1]]
                     text: 'Join Network Game'
-                    on_press: root.current = 'join_game'
+                    id: join_button
     Screen:
         name: 'host_game'
         RelativeLayout:
@@ -293,10 +292,29 @@
                     text: 'Start'
                     id: start_button
     Screen:
-        name: 'join_game'
-        BoxLayout:
-            orientation: 'horizontal'
+        name: 'host_wait'
+        RelativeLayout:
+            Label:
+                size_hint: (0.4, 0.2)
+                pos_hint: {'center_x':0.5, 'center_y':0.6}
+                text: 'Waiting for players ...'
             Button:
+                size_hint: (0.4, 0.1)
+                pos_hint: {'center_x':0.5, 'center_y':0.2}
+                text: 'Back'
+                on_press: root.cancel_host_wait
+    Screen:
+        name: 'join_game'
+        RelativeLayout:
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: (0.6, 0.6)
+                pos_hint: {'center_x':0.5, 'center_y':0.6}
+                orientation: 'vertical'
+                id: join_game_box
+            Button:
+                size_hint: (0.4, 0.1)
+                pos_hint: {'center_x':0.5, 'center_y':0.2}
                 text: 'Back'
                 on_press: root.current = 'main'
     Screen:
@@ -316,7 +334,7 @@
                 size_hint: (0.4, 0.1)
                 text: 'Restart game'
                 pos_hint: {'center_x':0.5, 'center_y':0.4}
-                on_press: root.start_game()
+                on_press: root.restart_game()
             Button:
                 size_hint: (0.4, 0.1)
                 text: 'Exit to menu'
