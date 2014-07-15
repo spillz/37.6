@@ -33,12 +33,23 @@ For two to five players (the official version of the game is for two players)
 
 4. **Winning**: The player with the most points the first time any
    player reaches 6 points is the winner (the scoreboard
-   is displayed at the top right of the screen).
+   is displayed at the top right of the screen). The game is a draw
+   if two or more players have the same score of 6 or more points.
 
 For more information: http://boardgamegeek.com/thread/1167751/376-game-under-open-license-here/page/1
 
 How to Install and Play the Game
 ================================
+
+Windows
+-------
+
+Download the all-in-one binary release here: https://github.com/spillz/37.6/releases 
+
+or run the sources:
+
+1. Download the source package to your computer from https://github.com/spillz/37.6/archive/master.zip
+2. Install kivy and following the instructions for running the package: http://kivy.org/docs/installation/installation-windows.html
 
 Android
 -------
@@ -59,12 +70,6 @@ Open a terminal and type the following commands:
     git clone https://github.com/spillz/37.6
     cd 37.6
     python main.py
-
-Windows
--------
-
-1. Download the source package to your computer from https://github.com/spillz/37.6/archive/master.zip
-2. Install kivy and following the instructions for running the package: http://kivy.org/docs/installation/installation-windows.html
 
 TODOs
 =====
