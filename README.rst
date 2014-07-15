@@ -25,16 +25,15 @@ For two to five players (the official version of the game is for two players)
     - **Place**: The player then places the selected die on an 
       empty spot on the board.
 
-3. **Scoring**: A player scores a point for each die on the board
-   that has neighboring dice equal in number to the
-   face value the die (e.g. if the die face
-   is a 2 the player will score a point for that die 
-   if it has exactly 2 neighboring die).
+3. **Lock Dice**: A die is locked if the face value of the die equals
+    the number of dice in neighboring hexes (e.g. if the die face
+    is a 2 that die is locked if exactly 2 neighboring dice). 
+    If a neighboring die to a locked die is removed, that die is no longer locked.
 
-4. **Winning**: The player with the most points the first time any
-   player reaches 6 points is the winner (the scoreboard
-   is displayed at the top right of the screen). The game is a draw
-   if two or more players have the same score of 6 or more points.
+4. **Win with 6 Locked Dice**: The player with the most locked dice the first time any
+   player reaches 6 locked dice is the winner (each player's locked dice
+   count is displayed at the top right of the screen). The game is a draw
+   if two or more players have the same number of locked dice (but at least 6).
 
 For more information: http://boardgamegeek.com/thread/1167751/376-game-under-open-license-here/page/1
 
@@ -55,8 +54,11 @@ Android
 -------
 
 1. Download the source package to your device from https://github.com/spillz/37.6/archive/master.zip
-2. Goto the play store and install kivy
-3. Using a file manager application (I recommend ES File Explorer), extract the sources package to sdcard/kivy/37.6
+2. Goto the play store, find and install kivy
+3. Using a file manager application to open the source package (I recommend ES File Explorer),
+   then extract the source package to /sdcard/kivy/ 
+   (i.e. you need to put the folder called 37.6-master in 
+   /sdcard/kivy, creating the kivy folder if necessary)
 4. Start kivy launcher and select 37.6 from the list of games
 
 Ubuntu Linux
