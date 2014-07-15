@@ -134,17 +134,25 @@ class Board(FloatLayout):
         self.game_over = False
         self.remove_players()
         self.reset_tiles()
-        if len(player_spec)==2:
+        if len(player_spec) ==2:
             self.board_hex_count = 7
-        else:
+            dice_count = 12
+        elif len(player_spec) == 3:
+            self.board_hex_count = 7
+            dice_count = 9
+        elif len(player_spec) == 4:
             self.board_hex_count = 9
+            dice_count = 10
+        else: #5
+            self.board_hex_count = 9
+            dice_count = 9
         for p in player_spec:
             if p.type == 0: #human
-                self.players.append(Player(p.name, p.color, self))
+                self.players.append(Player(p.name, p.color, self, dice_count))
             if p.type == 1: #computer
-                self.players.append(AIPlayer(p.name, p.color, self))
+                self.players.append(AIPlayer(p.name, p.color, self, dice_count))
             if p.type == 2: #network
-                self.players.append(NetworkPlayer(p.name, p.color, self))
+                self.players.append(NetworkPlayer(p.name, p.color, self, dice_count))
         self.size_changed()
 
     def start_game(self):
@@ -371,13 +379,13 @@ class PlayerScore(FloatLayout):
         self.color = color
 
 class Player(object):
-    def __init__(self, name, color, board):
+    def __init__(self, name, color, board, dice_count = 12):
         self.local_control = True
         self.name = name
         self.color = color
         self.board = board
-        self.dice_count = 12
-        self.dice = [Die(board, self, die_color = color) for x in range(12)]
+        self.dice_count = dice_count
+        self.dice = [Die(board, self, die_color = color) for x in range(dice_count)]
         self.score_marker = PlayerScore(identity = self.name[0:2], color = color)
         self.board.scoreboard.add_widget(self.score_marker)
 
@@ -426,8 +434,8 @@ class Player(object):
                              board_size[1] - (1 + x//2) * (hex_side + 0.01*board_size[0]))
 
 class AIPlayer(Player):
-    def __init__(self, name, color, board):
-        super(AIPlayer, self).__init__(name, color, board)
+    def __init__(self, name, color, board, dice_count = None):
+        super(AIPlayer, self).__init__(name, color, board, dice_count)
         self.local_control = False
 
     def score_add_die(self, value, hex_pos):
@@ -566,8 +574,8 @@ class AIPlayer(Player):
 
 
 class NetworkPlayer(Player):
-    def __init__(self, name, color, board):
-        super(NetworkPlayer, self).__init__(name, color, board)
+    def __init__(self, name, color, board, dice_count = None):
+        super(NetworkPlayer, self).__init__(name, color, board, dice_count)
         self.local_control = False
         self.queue = None
 
