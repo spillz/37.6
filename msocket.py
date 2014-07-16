@@ -15,11 +15,12 @@ def get_network_ip():
     return s.getsockname()[0]
 
 class BroadcastServer:
-    def __init__(self, game_name, game_port, broadcast_port):
+    def __init__(self, game_id, game_name, game_port, broadcast_port):
     #UDP server responds to broadcast packets
     #you can have more than one instance of these running
         self.thread = threading.Thread(target = self.broadcast_and_listen)
         self.alive = True
+        self.game_id = game_id
         self.game_name = game_name
         self.game_port = game_port
         self.broadcast_port = broadcast_port
@@ -37,18 +38,18 @@ class BroadcastServer:
 
         while self.alive:
             try:
-                recv_data, addr = server_socket.recvfrom(2048,)
-                if recv_data == self.game_name:
-                    server_socket.sendto(pickle.dumps((self.game_name,self.game_port)), addr)
+                recv_data, addr = server_socket.recvfrom(4096,)
+                if recv_data == self.game_id:
+                    server_socket.sendto(pickle.dumps((self.game_id, self.game_name, self.game_port)), addr)
             except socket.timeout:
                 pass
 
 class BroadcastClient:
-    def __init__(self, game_name, port, callback):
+    def __init__(self, game_id, port, callback):
         self.address = ('<broadcast>', port)
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.game_name = game_name
+        self.game_id = game_id
         self.alive = True
         self.callback = callback
         self.responses = {}
@@ -60,12 +61,17 @@ class BroadcastClient:
 
     def broadcast(self, timeout = 1.0):
         self.client_socket.settimeout(timeout)
-        self.client_socket.sendto(self.game_name, self.address)
+        self.client_socket.sendto(self.game_id, self.address)
         while self.alive:
             try:
-                recv_data, addr = self.client_socket.recvfrom(2048)
-                self.callback(addr,pickle.loads(recv_data))
-                self.responses[addr] = pickle.loads(recv_data)
+                recv_data, addr = self.client_socket.recvfrom(4096)
+                try:
+                    data = pickle.loads(recv_data)
+                    if data[0] == self.game_id:
+                        self.responses[addr] = data
+                        self.callback(addr,data)
+                except:
+                    pass
             except socket.timeout:
                 pass
     
@@ -194,7 +200,7 @@ class Player(object):
         counter+=1
 
 class TurnBasedServer(object):
-    def __init__(self, GAME_NAME, BROADCAST_PORT, SERVER_PORT, players_required, callback):
+    def __init__(self, GAME_ID, GAME_NAME, BROADCAST_PORT, SERVER_PORT, players_required, callback):
         self.port = SERVER_PORT
         self.players = []
         self.fn_dict = {}
@@ -205,7 +211,7 @@ class TurnBasedServer(object):
         self.listener_thread = threading.Thread(target = self.serve)
         self.listener_thread.start()
         #Start a broadcaster in a separate thread that tells clients the ip:port combination of this server
-        self._broadcast_server = BroadcastServer(GAME_NAME, SERVER_PORT, BROADCAST_PORT)
+        self._broadcast_server = BroadcastServer(GAME_ID, GAME_NAME, SERVER_PORT, BROADCAST_PORT)
 
     def connections(self):
         return [p.conn for p in self.players]
@@ -229,7 +235,7 @@ class TurnBasedServer(object):
     def serve(self):
         try:
             SERVER_IP = get_network_ip()
-            print('starting server at %s:%i'%(SERVER_IP,self.port))
+            print('Starting TurnBasedServer at %s:%i'%(SERVER_IP,self.port))
             self.listener = Listener(SERVER_IP, self.port, 1.0)
             while self.alive and len(self.players) < self.players_required:
                 try:
@@ -261,7 +267,6 @@ class TurnBasedServer(object):
             import traceback
             traceback.print_exc()
             self.callback('connection_error', e.message)
-        self.alive = False
 
     def _sender(self, p):
         try:
@@ -302,8 +307,8 @@ class TurnBasedClient(object):
     '''
     Handles the connection to the multiplayer server in a thread and routes messages between client and server
     '''
-    def __init__(self, game_name, SERVER_IP, SERVER_PORT, client_callback):
-        print('Starting TurnBasedClient on',SERVER_IP, SERVER_PORT)
+    def __init__(self, game_id, game_name, SERVER_IP, SERVER_PORT, client_callback):
+        print('Starting TurnBasedClient on %s:%i'%(SERVER_IP, SERVER_PORT))
         self._conn = Client(SERVER_IP, SERVER_PORT, 1.0)
         self._players = []
         self._client_callback = client_callback
@@ -322,7 +327,6 @@ class TurnBasedClient(object):
         self.queue.put(('quit',None))
 
     def _sender(self):
-        self.alive = True
         try:
             while self.alive:
                 try:
@@ -332,9 +336,9 @@ class TurnBasedClient(object):
                             pass
                 except socket.timeout:
                     pass
-                except EOFError:
-                    ##TODO: disconnect from server / tell parent / try to reconnect
-                    self.alive = False
+#                except EOFError:
+#                    ##TODO: disconnect from server / tell parent / try to reconnect
+#                    self.alive = False
         except Exception as e:
             print('Unhandled TurnBasedClient exception')
             import traceback
@@ -347,7 +351,6 @@ class TurnBasedClient(object):
         try:
             while self.alive:
                 try:
-                    result = None
                     result = self._conn.recv()
                     while self.alive and result is None:
                         result = self._conn.continue_recv()
@@ -357,9 +360,9 @@ class TurnBasedClient(object):
                     self._client_callback(msg, data)
                 except socket.timeout:
                     pass
-                except EOFError:
-                    ##TODO: disconnect from server / tell parent / try to reconnect
-                    self.alive = False
+#                except EOFError:
+#                    ##TODO: disconnect from server / tell parent / try to reconnect
+#                    self.alive = False
         except Exception as e:
             print('Unhandled TurnBasedClient exception')
             import traceback

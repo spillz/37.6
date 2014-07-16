@@ -31,6 +31,12 @@ from kivy.lang import Builder
 from kivy.vector import Vector
 from kivy.animation import Animation
 
+#game_id = '37.6 v0.11'
+game_id = '37.6'
+game_name = '37.6'
+GAME_PORT = 22140
+BROADCAST_PORT = 22141
+
 class Die(Widget):
     value = NumericProperty()
     spot_width = NumericProperty()
@@ -605,9 +611,6 @@ color_lookup = {
     4: [0.5, 0.5, 0, 1],
     }
 
-GAME_PORT = 22126
-BROADCAST_PORT = 22127
-
 class GameMenu(ScreenManager):
     player_count = NumericProperty()
     players = ListProperty()
@@ -622,7 +625,7 @@ class GameMenu(ScreenManager):
         self.w_start_button.bind(on_release = self.start_game)
         self.w_join_button.bind(on_release = self.find_network_game)
 
-        args_converter = lambda row_index, rec: {'text': str(rec['ip_address'])+':'+str(rec['port']), 
+        args_converter = lambda row_index, rec: {'text': '%s on %s:%s'%(rec['game_name'],str(rec['ip_address']),str(rec['port'])) ,
             'size_hint_y': 0.1}
         adapter = ListAdapter(data = [],
             args_converter=args_converter,
@@ -641,7 +644,7 @@ class GameMenu(ScreenManager):
         print('looking for network games')
         import msocket
         self.w_join_game_list_view.adapter.data = []
-        self.server = msocket.BroadcastClient('37.6', BROADCAST_PORT, callback = self.network_broadcaster_callback)
+        self.server = msocket.BroadcastClient(game_id, BROADCAST_PORT, callback = self.network_broadcaster_callback)
         self.current = 'join_game'
 
     def stop_server(self):
@@ -653,15 +656,11 @@ class GameMenu(ScreenManager):
         Clock.schedule_once(functools.partial(self.network_game_found, *args))
 
     def network_game_found(self, *args):
-        (ip, bport), (game_name, gport), dt = args
-        print 'found network game'
-        print args
-
+        (ip, bport), (game_id, game_name, gport), dt = args
         data = self.w_join_game_list_view.adapter.data[:]
         data.append({'ip_address': ip, 'game_name': game_name, 'port': gport})
         self.w_join_game_list_view.adapter.data = data
         self.w_join_game_list_view.populate()
-        print self.w_join_game_list_view.adapter.data
 
     def network_game_join(self, adapter):
         print 'network_game_join'
@@ -670,17 +669,17 @@ class GameMenu(ScreenManager):
             return
         sel = adapter.selection[0]
         data = adapter.data[sel.index]
-        game_name = data['game_name']
+        gname = data['game_name']
         ip = data['ip_address']
         gport = data['port']
         import msocket
         self.stop_server()
-        self.server = msocket.TurnBasedClient(game_name, ip, gport, self.server_callback)
+        self.server = msocket.TurnBasedClient(game_id, gname, ip, gport, self.server_callback)
         self.server.send('hello',None)
     
     def start_network_server(self):
         import msocket
-        self.server = msocket.TurnBasedServer('37.6', BROADCAST_PORT, GAME_PORT, self.num_network_players, callback = self.server_callback)
+        self.server = msocket.TurnBasedServer(game_id, game_name, BROADCAST_PORT, GAME_PORT, self.num_network_players, callback = self.server_callback)
 
     def server_callback(self, *args):
         Clock.schedule_once(functools.partial(self.server_msg, *args))
