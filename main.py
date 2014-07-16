@@ -674,7 +674,11 @@ class GameMenu(ScreenManager):
         gport = data['port']
         import msocket
         self.stop_server()
-        self.server = msocket.TurnBasedClient(game_id, gname, ip, gport, self.server_callback)
+        try:
+            self.server = msocket.TurnBasedClient(game_id, gname, ip, gport, self.server_callback)
+        except:
+            #TODO: NOTIFY USER THAT CLIENT COULDN'T CONNECT
+            return
         self.server.send('hello',None)
     
     def start_network_server(self):
