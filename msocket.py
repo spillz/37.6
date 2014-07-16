@@ -195,9 +195,7 @@ class Player(object):
 
 class TurnBasedServer(object):
     def __init__(self, GAME_NAME, BROADCAST_PORT, SERVER_PORT, players_required, callback):
-        SERVER_IP = get_network_ip()
-        print('starting server at %s:%i'%(SERVER_IP,SERVER_PORT))
-        self.listener = Listener(SERVER_IP, SERVER_PORT, 1.0)
+        self.port = SERVER_PORT
         self.players = []
         self.fn_dict = {}
         self.players_required = players_required
@@ -229,44 +227,73 @@ class TurnBasedServer(object):
             p.queue.put((msg, data))
 
     def serve(self):
-        while self.alive and len(self.players) < self.players_required:
-            try:
-                self.accept_connection()
-            except socket.error as e:
-                pass
-            except socket.timeout:
-                pass
-        if self.alive:
-            self.callback('players_joined', None)
-            msg, data = self.queue.get()
-            for p,d in zip(self.players, data):
-                p.id = d
-                p.queue = Queue()
-            self._broadcast_server.stop()
-            for p in self.players: ##TODO: replace this with a select loop
-                threading.Thread(target = self._sender, args = (p,)).start()
-                threading.Thread(target = self._receiver, args = (p,)).start()
-            self.listener.close()
+        try:
+            SERVER_IP = get_network_ip()
+            print('starting server at %s:%i'%(SERVER_IP,self.port))
+            self.listener = Listener(SERVER_IP, self.port, 1.0)
+            while self.alive and len(self.players) < self.players_required:
+                try:
+                    self.accept_connection()
+                except socket.error as e:
+                    pass
+                except socket.timeout:
+                    pass
+        except Exception as e:
+            print('Unhandled TurnBasedServer exception')
+            import traceback
+            traceback.print_exc()
+            self.callback('connection_error', e.message)
+            self.alive = False
+        try:
+            if self.alive:
+                self.callback('players_joined', None)
+                msg, data = self.queue.get()
+                for p,d in zip(self.players, data):
+                    p.id = d
+                    p.queue = Queue()
+                self._broadcast_server.stop()
+                for p in self.players: ##TODO: replace this with a select loop
+                    threading.Thread(target = self._sender, args = (p,)).start()
+                    threading.Thread(target = self._receiver, args = (p,)).start()
+                self.listener.close()
+        except Exception as e:
+            print('Unhandled TurnBasedServer exception')
+            import traceback
+            traceback.print_exc()
+            self.callback('connection_error', e.message)
+        self.alive = False
 
     def _sender(self, p):
-        while self.alive:
-            msg, data = p.queue.get()
-            if not p.conn.send((msg,data)):
-                while self.alive and not p.conn.continue_send():
-                    pass
+        try:
+            while self.alive:
+                msg, data = p.queue.get()
+                if not p.conn.send((msg,data)):
+                    while self.alive and not p.conn.continue_send():
+                        pass
+        except Exception as e:
+            print('Unhandled TurnBasedServer exception')
+            import traceback
+            traceback.print_exc()
+            self.callback('connection_error', e.message)
         self.alive = False
         
     def _receiver(self, p):
-        while self.alive:
-            result = p.conn.recv()
-            while self.alive and result is None:
-                result = p.conn.continue_recv()
-            if not self.alive:
-                break
-            msg, data = result
-            if not self.alive:
-                break
-            self.callback(msg, (p.id, data))
+        try:
+            while self.alive:
+                result = p.conn.recv()
+                while self.alive and result is None:
+                    result = p.conn.continue_recv()
+                if not self.alive:
+                    break
+                msg, data = result
+                if not self.alive:
+                    break
+                self.callback(msg, (p.id, data))
+        except Exception as e:
+            print('Unhandled TurnBasedServer exception')
+            import traceback
+            traceback.print_exc()
+            self.callback('connection_error', e.message)
         self.alive=False
         p.conn.close()
 
@@ -296,36 +323,48 @@ class TurnBasedClient(object):
 
     def _sender(self):
         self.alive = True
-        while self.alive:
-            try:
-                msg, data = self.queue.get()
-                if not self._conn.send((msg, data)):
-                    while self._conn.continue_send(self):
-                        pass
-            except socket.timeout:
-                pass
-            except EOFError:
-                ##TODO: disconnect from server / tell parent / try to reconnect
-                self.alive = False
+        try:
+            while self.alive:
+                try:
+                    msg, data = self.queue.get()
+                    if not self._conn.send((msg, data)):
+                        while self._conn.continue_send(self):
+                            pass
+                except socket.timeout:
+                    pass
+                except EOFError:
+                    ##TODO: disconnect from server / tell parent / try to reconnect
+                    self.alive = False
+        except Exception as e:
+            print('Unhandled TurnBasedClient exception')
+            import traceback
+            traceback.print_exc()
+            self._client_callback('connection_error', e.message)
         self.alive = False
         self._conn.close()
         
     def _receiver(self):
-        while self.alive:
-            try:
-                result = None
-                result = self._conn.recv()
-                while self.alive and result is None:
-                    result = self._conn.continue_recv()
-                if not self.alive:
-                    break
-                msg, data = result
-                self._client_callback(msg, data)
-            except socket.timeout:
-                pass
-            except EOFError:
-                ##TODO: disconnect from server / tell parent / try to reconnect
-                self.alive = False
+        try:
+            while self.alive:
+                try:
+                    result = None
+                    result = self._conn.recv()
+                    while self.alive and result is None:
+                        result = self._conn.continue_recv()
+                    if not self.alive:
+                        break
+                    msg, data = result
+                    self._client_callback(msg, data)
+                except socket.timeout:
+                    pass
+                except EOFError:
+                    ##TODO: disconnect from server / tell parent / try to reconnect
+                    self.alive = False
+        except Exception as e:
+            print('Unhandled TurnBasedClient exception')
+            import traceback
+            traceback.print_exc()
+            self._client_callback('connection_error', e.message)
         self.alive = False
 
 
