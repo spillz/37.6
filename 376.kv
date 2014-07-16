@@ -302,21 +302,26 @@
                 size_hint: (0.4, 0.1)
                 pos_hint: {'center_x':0.5, 'center_y':0.2}
                 text: 'Back'
-                on_press: root.cancel_host_wait
+                on_press: root.stop_server(); root.current = 'host_game'
     Screen:
         name: 'join_game'
         RelativeLayout:
-            BoxLayout:
-                orientation: 'vertical'
-                size_hint: (0.6, 0.6)
-                pos_hint: {'center_x':0.5, 'center_y':0.6}
-                orientation: 'vertical'
-                id: join_game_box
+            id: join_game_box
+#            ListView:
+#                size_hint: (0.6, 0.6)
+#                pos_hint: {'center_x':0.5, 'center_y':0.6}
+#                on_adapter: self.adapter.bind_triggers_to_view(self._trigger_reset_populate)
+#                canvas.before:
+#                    Color:
+#                        rgba: (0.5,0.5,0.5,1.0)
+#                    Rectangle:
+#                        size: self.size
+#                        pos: self.pos
             Button:
                 size_hint: (0.4, 0.1)
                 pos_hint: {'center_x':0.5, 'center_y':0.2}
                 text: 'Back'
-                on_press: root.current = 'main'
+                on_press: root.stop_server(); root.current = 'main'
     Screen:
         name: 'pause'
         RelativeLayout:

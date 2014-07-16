@@ -11,6 +11,8 @@ import functools
 import kivy
 kivy.require('1.0.1')
 
+from kivy.uix.listview import ListView, ListItemLabel, ListItemButton
+from kivy.adapters.listadapter import ListAdapter
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.scatterlayout import ScatterLayout
@@ -613,48 +615,72 @@ class GameMenu(ScreenManager):
     w_start_button = ObjectProperty()
     w_join_button = ObjectProperty()
     w_join_game_box = ObjectProperty()
+    w_join_game_adapter = ObjectProperty()
 
     def __init__(self):
         super(GameMenu, self).__init__()
         self.w_start_button.bind(on_release = self.start_game)
         self.w_join_button.bind(on_release = self.find_network_game)
+
+        args_converter = lambda row_index, rec: {'text': str(rec['ip_address'])+':'+str(rec['port']), 
+            'size_hint_y': 0.1}
+        adapter = ListAdapter(data = [],
+            args_converter=args_converter,
+            cls=ListItemButton,
+            selection_mode='single',
+            allow_empty_selection=True)
+        self.w_join_game_list_view = ListView(size_hint = (0.6, 0.6), pos_hint = {'center_x':0.5, 'center_y':0.6},
+                    adapter = adapter)
+        self.w_join_game_box.add_widget(self.w_join_game_list_view)
+        self.w_join_game_list_view.adapter.bind(on_selection_change = self.network_game_join)
+
         self.player_spec = []
         self.server = None
 
     def find_network_game(self, *args):
         print('looking for network games')
         import msocket
+        self.w_join_game_list_view.adapter.data = []
         self.server = msocket.BroadcastClient('37.6', BROADCAST_PORT, callback = self.network_broadcaster_callback)
         self.current = 'join_game'
 
-    def cancel_find_network_game(self, *args):
-        print 'cancel'
-        pass
+    def stop_server(self):
+        if self.server is not None:
+            self.server.stop()
+            self.server = None
 
     def network_broadcaster_callback(self, *args):
         Clock.schedule_once(functools.partial(self.network_game_found, *args))
 
     def network_game_found(self, *args):
         (ip, bport), (game_name, gport), dt = args
-        b = Button(text = game_name+' '+str(ip)+':'+str(gport), size_hint = (0.4,0.1))
-        self.w_join_game_box.add_widget(b)
-        b.bind(on_release = functools.partial(self.network_game_join, game_name, ip, gport))
-        ##TODO: instead of joining the first game found, just populate a list of games
-        ##      using the network_game_join as a callback from the list button press
+        print 'found network game'
+        print args
 
-    def network_game_join(self, game_name, ip, gport, button):
+        data = self.w_join_game_list_view.adapter.data[:]
+        data.append({'ip_address': ip, 'game_name': game_name, 'port': gport})
+        self.w_join_game_list_view.adapter.data = data
+        self.w_join_game_list_view.populate()
+        print self.w_join_game_list_view.adapter.data
+
+    def network_game_join(self, adapter):
+        print 'network_game_join'
+        print adapter
+        if len(adapter.selection) == 0:
+            return
+        sel = adapter.selection[0]
+        data = adapter.data[sel.index]
+        game_name = data['game_name']
+        ip = data['ip_address']
+        gport = data['port']
         import msocket
-        self.server.stop()
+        self.stop_server()
         self.server = msocket.TurnBasedClient(game_name, ip, gport, self.server_callback)
         self.server.send('hello',None)
     
     def start_network_server(self):
         import msocket
         self.server = msocket.TurnBasedServer('37.6', BROADCAST_PORT, GAME_PORT, self.num_network_players, callback = self.server_callback)
-
-    def cancel_host_wait(self, *args):
-        self.server.stop()
-        self.server = None
 
     def server_callback(self, *args):
         Clock.schedule_once(functools.partial(self.server_msg, *args))
@@ -775,12 +801,10 @@ class GameApp(App):
             elif self.gm.current == 'host_game':
                 self.gm.current = 'main'
             elif self.gm.current == 'host_wait':
-                self.gm.server.stop()
-                self.gm.server = None
+                self.gm.stop_server(); 
                 self.gm.current = 'main'
             elif self.gm.current == 'join_game':
-                self.gm.server.stop()
-                self.gm.server = None
+                self.gm.stop_server(); 
                 self.gm.current = 'main'
             elif self.gm.current == 'game':
                 self.gm.current = 'pause'
