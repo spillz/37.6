@@ -20,6 +20,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.app import App
 from kivy.properties import ObjectProperty, StringProperty, ReferenceListProperty, NumericProperty, BooleanProperty, ListProperty
 from kivy.uix.image import Image
@@ -31,8 +32,7 @@ from kivy.lang import Builder
 from kivy.vector import Vector
 from kivy.animation import Animation
 
-#game_id = '37.6 v0.11'
-game_id = '37.6'
+game_id = '37.6 v0.3'
 game_name = '37.6'
 GAME_PORT = 22140
 BROADCAST_PORT = 22141
@@ -124,6 +124,8 @@ class Board(FloatLayout):
         self.scoreboard = ScoreBoard()
         self.add_widget(self.scoreboard)
         self.game_over = False
+        self.w_state_label = Label(text = '', color = (1.0, 1.0, 1.0, 1.0), size_hint = (0.3, 0.1), pos_hint ={'right': 0.99, 'center_y': 0.1})
+        self.add_widget(self.w_state_label)
 
     def remove_players(self):
         self.active_player = -1
@@ -140,6 +142,8 @@ class Board(FloatLayout):
 
     def setup_game(self, player_spec):
         self.game_over = False
+        self.w_state_label.text = ''
+        self.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
         self.remove_players()
         self.reset_tiles()
         if len(player_spec) ==2:
@@ -175,13 +179,26 @@ class Board(FloatLayout):
         self.active_player +=1
         if self.active_player >= len(self.players):
             self.active_player = 0
-        self.players[self.active_player].start_turn()
+        p = self.players[self.active_player]
+        p.start_turn()
+        if p.local_control:
+            self.w_state_label.text = 'Select die'
+            self.w_state_label.color = p.color
+        else:
+            self.w_state_label.text = ''
+            self.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
 
     def show_game_over(self):
         scores = [p.score_marker.score for p in self.players]
         hi_score = max(scores)
-        winners = [self.players[z].name for (z,s) in zip(range(len(self.players)), scores) if s == hi_score]
+        winners = [self.players[z] for (z,s) in zip(range(len(self.players)), scores) if s == hi_score]
         self.game_over = True
+        if len(winners) == 1:
+            self.w_state_label.color = winners[0].color
+            self.w_state_label.text = 'Game over - %s wins'%(winners[0].name)
+        else:
+            self.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
+            self.w_state_label.text = 'Game over - draw'
 #        g = GameOver(board = self, winner_names = winners, size = (self.size[0]/2, self.size[1]/2))
 #        g.open()
 
@@ -228,6 +245,7 @@ class Board(FloatLayout):
         self.scoreboard.right = 0.99 * self.size[0]
         self.scoreboard.top = self.size[1] - 0.01*self.size[0]
         self.scoreboard.update_size(self.size)
+        self.w_state_label.font_size = 0.03*self.size[1]
 
     def pixel_pos(self, hex_pos):
         '''
@@ -366,8 +384,12 @@ class Board(FloatLayout):
     def on_touch_down_die(self, die, touch):
         if self.game_over:
             return True
-        if not self.players[self.active_player].local_control:
+        p = self.players[self.active_player]
+        if not p.local_control:
             return True
+        else:
+            self.w_state_label.text = 'Place die'
+            self.w_state_label.color = p.color
         return self.select_die(die)
 
 class ScoreBoard(BoxLayout):
@@ -614,6 +636,7 @@ color_lookup = {
 class GameMenu(ScreenManager):
     player_count = NumericProperty()
     players = ListProperty()
+    disconnected = BooleanProperty()
     w_game = ObjectProperty()
     w_start_button = ObjectProperty()
     w_join_button = ObjectProperty()
@@ -639,6 +662,7 @@ class GameMenu(ScreenManager):
 
         self.player_spec = []
         self.server = None
+        self.disconnected = False
 
     def find_network_game(self, *args):
         print('looking for network games')
@@ -663,8 +687,6 @@ class GameMenu(ScreenManager):
         self.w_join_game_list_view.populate()
 
     def network_game_join(self, adapter):
-        print 'network_game_join'
-        print adapter
         if len(adapter.selection) == 0:
             return
         sel = adapter.selection[0]
@@ -679,11 +701,13 @@ class GameMenu(ScreenManager):
         except:
             #TODO: NOTIFY USER THAT CLIENT COULDN'T CONNECT
             return
+        self.disconnected = False
         self.server.send('hello',None)
     
     def start_network_server(self):
         import msocket
         self.server = msocket.TurnBasedServer(game_id, game_name, BROADCAST_PORT, GAME_PORT, self.num_network_players, callback = self.server_callback)
+        self.disconnected = False
 
     def server_callback(self, *args):
         Clock.schedule_once(functools.partial(self.server_msg, *args))
@@ -729,10 +753,17 @@ class GameMenu(ScreenManager):
         elif msg == 's_restart': #resposne to the game restart
             #    data is success
             self.start_network_game()
-        elif msg == 's_quitgame': #resposne to the game quit
+        elif msg == 's_quitgame': #response to the game quit
             #    data is success
-            self.start_network_game()
-            
+            self.server.stop()
+            self.server = None
+            self.current = 'main'
+        elif msg == 'connection_error':
+            board.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
+            board.w_state_label.text = 'Disconnected - game over'
+            board.game_over = True
+            self.server = None
+            self.disconnected = True
 
     def start_network_game(self, spec = None):
         if spec is not None:
@@ -750,6 +781,8 @@ class GameMenu(ScreenManager):
             pass
 
     def restart_game(self):
+        if self.disconnected:
+            return False
         if self.server is not None:
             try:
                 self.server.notify_clients('s_restart',None)

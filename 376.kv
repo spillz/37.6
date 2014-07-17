@@ -297,7 +297,7 @@
             Label:
                 size_hint: (0.4, 0.2)
                 pos_hint: {'center_x':0.5, 'center_y':0.6}
-                text: 'Waiting for players ...'
+                text: 'Waiting for players ...' if not root.disconnected else 'Connection error'
             Button:
                 size_hint: (0.4, 0.1)
                 pos_hint: {'center_x':0.5, 'center_y':0.2}
@@ -317,6 +317,10 @@
 #                    Rectangle:
 #                        size: self.size
 #                        pos: self.pos
+            Label:
+                size_hint: (0.4, 0.1)
+                pos_hint: {'center_x':0.5, 'center_y':0.3}
+                text: 'Connection error' if root.disconnected else ''
             Button:
                 size_hint: (0.4, 0.1)
                 pos_hint: {'center_x':0.5, 'center_y':0.2}
@@ -339,6 +343,7 @@
                 size_hint: (0.4, 0.1)
                 text: 'Restart game'
                 pos_hint: {'center_x':0.5, 'center_y':0.4}
+                disabled: root.disconnected
                 on_press: root.restart_game()
             Button:
                 size_hint: (0.4, 0.1)
