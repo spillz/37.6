@@ -12,7 +12,7 @@ Youtube: http://youtu.be/z4mxD9EQsJs
 Rules
 =====
 
-For two to five players (the official version of the game is for two players)
+For two to five players (the original version of the game is for two players)
 
 1. **Setup**: Each player has 12 dice that are placed in a stack
    to the side of an empty hex board.
@@ -76,12 +76,12 @@ Open a terminal and type the following commands:
 TODOs
 =====
 
-1. Smarter AI players
-2. Network players (options are currently disabled)
+1. Varying levels of AI players
+2. Standalone server for internet play
 3. Game Persistence
 4. Sound effects
 5. UI tidy up (menus, graphics)
 6. Player customiztion (names, colors, profiles)
-7. Binary Packages
+7. Binary Packages (Android, Linux, Mac)
    
 See the LICENSE file for copyright information
