@@ -32,10 +32,15 @@ from kivy.lang import Builder
 from kivy.vector import Vector
 from kivy.animation import Animation
 
+from helpers import white, grey, black, clear, game_bg_color, menu_bg_color
+
 game_id = '37.6 v0.3'
 game_name = '37.6'
 GAME_PORT = 22140
 BROADCAST_PORT = 22141
+
+def color_average(a, b, a_wgt = 0.0):
+    return (a_wgt*x+(1-a_wgt)*y for x,y in zip(a,b))
 
 class Die(Widget):
     value = NumericProperty()
@@ -69,7 +74,7 @@ class Die(Widget):
             self.hex_pos = hex_pos
 #            self.center = center_pos
             self.selected = False
-            a = Animation(center_x = center_pos[0], center_y = center_pos[1], duration = 0.2)
+            a = Animation(center_x = center_pos[0], center_y = center_pos[1], duration = 0.1)
             a.start(self)
             #TODO: Start animation to move die to bottom left
 
@@ -83,7 +88,7 @@ class Die(Widget):
         if value == True:
             self.roll()
             self.hex_pos = [-1, -1]
-            a = Animation(x = self.board.select_pos[0], y = self.board.select_pos[1], duration = 0.2)
+            a = Animation(x = self.board.select_pos[0], y = self.board.select_pos[1], duration = 0.1)
             a.start(self)
 
 class HexTile(Widget):
@@ -106,6 +111,9 @@ class HexTile(Widget):
         if (touch.pos[0] - self.center_x)**2 + (touch.pos[1] - self.center_y)**2 < (self.hex_height/2)**2:
             self.board.on_touch_down_tile(self, touch)
 
+class StatusLabel(Label):
+    bg_color = ListProperty()
+
 class Board(FloatLayout):
     board_hex_count = NumericProperty()
     board_width = NumericProperty()
@@ -124,7 +132,7 @@ class Board(FloatLayout):
         self.scoreboard = ScoreBoard()
         self.add_widget(self.scoreboard)
         self.game_over = False
-        self.w_state_label = Label(text = '', color = (1.0, 1.0, 1.0, 1.0), size_hint = (0.3, 0.1), pos_hint ={'right': 0.99, 'center_y': 0.1})
+        self.w_state_label = StatusLabel(text = '', bg_color = clear, color = white, pos_hint ={'right': 0.99, 'y': 0.01})
         self.add_widget(self.w_state_label)
 
     def remove_players(self):
@@ -143,7 +151,8 @@ class Board(FloatLayout):
     def setup_game(self, player_spec):
         self.game_over = False
         self.w_state_label.text = ''
-        self.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
+        self.w_state_label.color = white
+        self.w_state_label.bg_color = clear
         self.remove_players()
         self.reset_tiles()
         if len(player_spec) ==2:
@@ -183,10 +192,12 @@ class Board(FloatLayout):
         p.start_turn()
         if p.local_control:
             self.w_state_label.text = 'Select die'
-            self.w_state_label.color = p.color
+            self.w_state_label.color = color_average(white, p.color)
+#            self.w_state_label.bg_color = grey
         else:
             self.w_state_label.text = ''
-            self.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
+            self.w_state_label.color = white
+#            self.w_state_label.bg_color = clear
 
     def show_game_over(self):
         scores = [p.score_marker.score for p in self.players]
@@ -194,13 +205,13 @@ class Board(FloatLayout):
         winners = [self.players[z] for (z,s) in zip(range(len(self.players)), scores) if s == hi_score]
         self.game_over = True
         if len(winners) == 1:
-            self.w_state_label.color = winners[0].color
+            self.w_state_label.color = color_average(white, winners[0].color)
             self.w_state_label.text = 'Game over - %s wins'%(winners[0].name)
+#            self.w_state_label.bg_color = grey
         else:
-            self.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
+            self.w_state_label.color = white
             self.w_state_label.text = 'Game over - draw'
-#        g = GameOver(board = self, winner_names = winners, size = (self.size[0]/2, self.size[1]/2))
-#        g.open()
+#            self.w_state_label.bg_color = grey
 
 #    def reset_game(self):
 #        self.active_player = -1
@@ -228,7 +239,6 @@ class Board(FloatLayout):
             self.select_pos = [3*(self.hex_side + 0.01*self.size[0]) , self.size[1] - self.hex_side - 0.01*self.size[0]]
             for p in self.players:
                 p.board_resize(self.pos, self.size, self.hex_side)
-#            self.next_player()
         else:
             for x in range(self.board_hex_count):
                 y_height = self.board_hex_count - abs((self.board_hex_count-1)//2-x)
@@ -245,7 +255,7 @@ class Board(FloatLayout):
         self.scoreboard.right = 0.99 * self.size[0]
         self.scoreboard.top = self.size[1] - 0.01*self.size[0]
         self.scoreboard.update_size(self.size)
-        self.w_state_label.font_size = 0.03*self.size[1]
+        self.w_state_label.font_size = 0.04*self.size[1]
 
     def pixel_pos(self, hex_pos):
         '''
@@ -334,6 +344,7 @@ class Board(FloatLayout):
             self.update_scores()
             self.selected_die = None
             self.next_player()
+            #NOTIFY NETWORK PLAYERS ABOUT THE MOVE
             try:
                 if self.server is not None:
                     self.server.notify_clients('s_place', (self.active_player, (int(hex_pos[0]), int(hex_pos[1]))))
@@ -364,7 +375,7 @@ class Board(FloatLayout):
             if roll_value is not None:
                 die.value = roll_value
             self.selected_die = die
-            ##NOTIFY NETWORK PLAYERS
+            #NOTIFY NETWORK PLAYERS ABOUT THE MOVE
             try:
                 if self.server is not None:
                     self.server.notify_clients('s_select', (self.active_player, die_num, die.value))
@@ -389,7 +400,8 @@ class Board(FloatLayout):
             return True
         else:
             self.w_state_label.text = 'Place die'
-            self.w_state_label.color = p.color
+            self.w_state_label.color = color_average(white, p.color)
+#            self.w_state_label.bg_color = grey
         return self.select_die(die)
 
 class ScoreBoard(BoxLayout):
@@ -759,7 +771,8 @@ class GameMenu(ScreenManager):
             self.server = None
             self.current = 'main'
         elif msg == 'connection_error':
-            board.w_state_label.color = (1.0, 1.0, 1.0, 1.0)
+            board.w_state_label.color = white
+#            board.w_state_label.bg_color = grey
             board.w_state_label.text = 'Disconnected - game over'
             board.game_over = True
             self.server = None

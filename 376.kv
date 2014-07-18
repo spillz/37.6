@@ -1,7 +1,54 @@
 #:kivy 1.0
 
-#:import face_spot_lookup helpers.face_spot_lookup
+#:import die_face_spot_lookup helpers.die_face_spot_lookup
+#:import die_face_size helpers.die_face_size
+#:import pr helpers.pr
+#:import game_bg_color helpers.game_bg_color
+#:import menu_bg_color helpers.menu_bg_color
+#:import red helpers.red
+#:import green helpers.green
+#:import blue helpers.blue
+#:import yellow helpers.yellow
+#:import purple helpers.purple
+#:import tile_color helpers.tile_color
+#:import tile_border_color helpers.tile_border_color
 #:import SlideTransition kivy.uix.screenmanager.SlideTransition
+
+<BasicDie@Widget>:
+    value: 1
+    die_color: [0.1,0.6,0.1,1.0]
+    spot_color: [0.99,0.99,0,1.0]
+    size_hint: (0.25, 0.75)
+#    spot_width: self.size[0]/5
+#    spot_height: self.size[1]/5
+    spot_width: 1.0 if self.size[0] is None else max(1.0,self.size[0]/5.0)
+    spot_height: 1.0 if self.size[1] is None else max(1.0,self.size[1]/5.0)
+    canvas:
+        Color:
+            rgba: self.die_color
+        Quad:
+            points: [self.pos[0]+0,self.pos[1]+0, self.pos[0]+self.size[0],self.pos[1]+0, self.pos[0]+self.size[0],self.pos[1]+self.size[1], self.pos[0]+0,self.pos[1]+self.size[1]]
+        #spots on the die
+        Color:
+            rgba: self.spot_color
+        Ellipse:
+            size: die_face_size(self.spot_width, self.spot_height)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 1)
+        Ellipse:
+            size: die_face_size(self.spot_width, self.spot_height)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 2)
+        Ellipse:
+            size: die_face_size(self.spot_width, self.spot_height)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 3)
+        Ellipse:
+            size: die_face_size(self.spot_width, self.spot_height)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 4)
+        Ellipse:
+            size: die_face_size(self.spot_width, self.spot_height)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 5)
+        Ellipse:
+            size: die_face_size(self.spot_width, self.spot_height)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 6)
 
 <Die>:
     value: 1
@@ -20,25 +67,25 @@
             rgba: self.spot_color
         Ellipse:
             size: (self.spot_width, self.spot_height)
-            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 1)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 1)
         Ellipse:
             size: (self.spot_width, self.spot_height)
-            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 2)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 2)
         Ellipse:
             size: (self.spot_width, self.spot_height)
-            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 3)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 3)
         Ellipse:
             size: (self.spot_width, self.spot_height)
-            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 4)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 4)
         Ellipse:
             size: (self.spot_width, self.spot_height)
-            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 5)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 5)
         Ellipse:
             size: (self.spot_width, self.spot_height)
-            pos: face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 6)
+            pos: die_face_spot_lookup(self.center_x, self.center_y, self.size[0], self.size[1], self.spot_width, self.spot_height, self.value, 6)
 
 <HexTile>:
-    color: (0.5,0.5,0.5,1.0)
+    color: tile_color
     size_hint: (None, None)
     hex_width: self.size[0]
     hex_len: self.size[0]/2
@@ -67,7 +114,7 @@
             points: [self.center_x, self.center_y, self.center_x - self.hex_len, self.center_y, self.center_x - self.hex_len/2, self.center_y - self.hex_height/2]
         #border
         Color:
-            rgba: (0.7,0.7,0.7,1.0)
+            rgba: tile_border_color
         Line:
             points: [ self.center_x - self.hex_len/2, self.center_y - self.hex_height/2, self.center_x + self.hex_len/2, self.center_y - self.hex_height/2, self.center_x + self.hex_len, self.center_y, self.center_x + self.hex_len/2, self.center_y + self.hex_height/2, self.center_x - self.hex_len/2, self.center_y + self.hex_height/2, self.center_x - self.hex_len, self.center_y, self.center_x - self.hex_len/2, self.center_y - self.hex_height/2 ]
 
@@ -102,6 +149,18 @@
         text: str(root.score)
         color: root.color
 
+<StatusLabel>:
+    bg_color: [0.0, 0.0, 0.0, 1.0]
+    size_hint: (None, None)
+    size: self.texture_size
+    halign: 'right'
+    canvas.before:
+        Color:
+            rgba: self.bg_color
+        Rectangle:
+            size: self.size
+            pos: self.pos
+            
 <Board>:
     board_hex_count: 7
     hex_side: min(self.size[0]/(1.5 * self.board_hex_count + 1), 0.95*self.size[1]/(self.board_hex_count * 3**0.5))
@@ -109,7 +168,13 @@
     hex_height: self.hex_side * (3**0.5)
     board_height: self.hex_height * self.board_hex_count
     board_width: self.hex_side * (1.5 * self.board_hex_count + 1)
-
+    canvas.before:
+        Color:
+            rgba: game_bg_color
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    
 <GameOver>:
     auto_dismiss: False
     size_hint: (None, None)
@@ -130,7 +195,8 @@
             Button:
                 on_press: root.on_replay()
                 text: 'Play again'
-
+    
+                
 <PlayerCountChooser@BoxLayout>:
     orientation: 'horizontal'
     group_id: 'count'
@@ -141,22 +207,47 @@
         active: True
     Label:
         text: '2'
+        on_touch_up: if self.collide_point( *args[1].pos): two.active, three.active, four.active, five.active = True, False, False, False
     CheckBox:
         id: three
         group: root.group_id
     Label:
         text: '3'
+        on_touch_up: if self.collide_point( *args[1].pos): two.active, three.active, four.active, five.active = False, True, False, False
     CheckBox:
         id: four
         group: root.group_id
     Label:
         text: '4'
+        on_touch_up: if self.collide_point( *args[1].pos): two.active, three.active, four.active, five.active = False, False, True, False
     CheckBox:
         id: five
         group: root.group_id
     Label:
         text: '5'
+        on_touch_up: if self.collide_point( *args[1].pos): two.active, three.active, four.active, five.active = False, False, False, True
 
+<PlayerLabel@RelativeLayout>:
+    orientation: 'horizontal'
+    text: ''
+    color: [0.0, 0.0, 0.0, 1.0]
+    value: 1
+#    size: [1,1]
+    BasicDie:
+        size_hint: [None, 0.75]
+        width: self.size[1]
+        value: root.value
+        die_color: root.color
+        pos_hint: {'center_y': 0.5, 'x': 0.0}
+    Label:
+        halign: 'left'
+        size_hint: [None, 0.75]
+        pos_hint: {'center_y': 0.5, 'x': 0.25}
+        text: root.text
+        size: self.texture_size
+#        on_touch_up: if self.collide_point( *args[1].pos): PlayerPopup().open()
+
+        
 <PlayerChooser@BoxLayout>:
     orientation: 'horizontal'
     group_id: 'player1'
@@ -167,16 +258,19 @@
         active: True
     Label:
         text: 'Human'
+        on_touch_up: if self.collide_point( *args[1].pos): human.active, computer.active, network.active = True, False, False
     CheckBox:
         id: computer
         group: root.group_id
     Label:
         text: 'Computer'
+        on_touch_up: if self.collide_point( *args[1].pos): human.active, computer.active, network.active = False, True, False
     CheckBox:
         id: network
         group: root.group_id
     Label:
         text: 'Net Player'
+        on_touch_up: if self.collide_point( *args[1].pos): human.active, computer.active, network.active = False, False, True
 
 <GameMenu>:
     w_game: game
@@ -186,6 +280,12 @@
     player_count: player_count.value
     players: [player1.value, player2.value, player3.value, player4.value, player5.value]
     transition: SlideTransition(direction = 'down')
+    canvas.before:
+        Color:
+            rgba: menu_bg_color
+        Rectangle:
+            size: self.size
+            pos: self.pos
     Screen:
         name: 'main'
         RelativeLayout:
@@ -198,7 +298,7 @@
                 canvas:
                     #hex is comprised of six triangles
                     Color:
-                        rgba: (0.5,0.5,0.5,1.0)
+                        rgba: tile_color
                     #top
                     Triangle:
                         points: [] if self.hex_len is None else [self.center_x, self.center_y, self.center_x - self.hex_len/2, self.center_y - self.hex_height/2, self.center_x + self.hex_len/2, self.center_y - self.hex_height/2]
@@ -219,7 +319,7 @@
                         points: [] if self.hex_len is None else [self.center_x, self.center_y, self.center_x - self.hex_len, self.center_y, self.center_x - self.hex_len/2, self.center_y - self.hex_height/2]
                     #border
                     Color:
-                        rgba: (0.7,0.7,0.7,1.0)
+                        rgba: tile_border_color
                     Line:
                         points: [] if self.hex_len is None else [ self.center_x - self.hex_len/2, self.center_y - self.hex_height/2, self.center_x + self.hex_len/2, self.center_y - self.hex_height/2, self.center_x + self.hex_len, self.center_y, self.center_x + self.hex_len/2, self.center_y + self.hex_height/2, self.center_x - self.hex_len/2, self.center_y + self.hex_height/2, self.center_x - self.hex_len, self.center_y, self.center_x - self.hex_len/2, self.center_y - self.hex_height/2 ]
             Label:
@@ -254,33 +354,48 @@
                     text: 'Players'
                 PlayerCountChooser:
                     id: player_count
-                Label:
+                PlayerLabel:
+                    id: player1id
                     text: 'Player 1'
+                    color: red
+                    value: 1
                 PlayerChooser:
                     id: player1
                     group_id: 'player1'
-                Label:
+                PlayerLabel:
+                    id: player2id
                     text: 'Player 2'
+                    color: green
+                    value: 2
                 PlayerChooser:
                     id: player2
                     group_id: 'player2'
-                Label:
+                PlayerLabel:
                     disabled: player_count.value<3
+                    id: player3id
                     text: 'Player 3'
+                    color: blue
+                    value: 3
                 PlayerChooser:
                     disabled: player_count.value<3
                     id: player3
                     group_id: 'player3'
-                Label:
+                PlayerLabel:
                     disabled: player_count.value<4
+                    id: player4id
                     text: 'Player 4'
+                    color: yellow
+                    value: 4
                 PlayerChooser:
                     disabled: player_count.value<4
                     id: player4
                     group_id: 'player4'
-                Label:
+                PlayerLabel:
                     disabled: player_count.value<5
+                    id: player5id
                     text: 'Player 5'
+                    color: purple
+                    value: 5
                 PlayerChooser:
                     disabled: player_count.value<5
                     id: player5
@@ -307,16 +422,6 @@
         name: 'join_game'
         RelativeLayout:
             id: join_game_box
-#            ListView:
-#                size_hint: (0.6, 0.6)
-#                pos_hint: {'center_x':0.5, 'center_y':0.6}
-#                on_adapter: self.adapter.bind_triggers_to_view(self._trigger_reset_populate)
-#                canvas.before:
-#                    Color:
-#                        rgba: (0.5,0.5,0.5,1.0)
-#                    Rectangle:
-#                        size: self.size
-#                        pos: self.pos
             Label:
                 size_hint: (0.4, 0.1)
                 pos_hint: {'center_x':0.5, 'center_y':0.3}
@@ -349,7 +454,7 @@
                 size_hint: (0.4, 0.1)
                 text: 'Exit to menu'
                 pos_hint: {'center_x':0.5, 'center_y':0.3}
-                on_press: root.current = 'main'
+                on_press: root.stop_server(); root.current = 'main'
     Screen:
         name: 'game'
         id: game
