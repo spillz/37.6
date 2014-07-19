@@ -12,7 +12,9 @@ Youtube: http://youtu.be/z4mxD9EQsJs
 Rules
 =====
 
-For two to five players (the original version of the game is for two players)
+For two to five players (the original version of the game is for two players,
+the three to five player version uses a larger board or a different number of dice.
+)
 
 1. **Setup**: Each player has 12 dice that are placed in a stack
    to the side of an empty hex board.
@@ -27,11 +29,11 @@ For two to five players (the original version of the game is for two players)
 
 3. **Lock Dice**: A die is locked if the face value of the die equals
    the number of dice in neighboring hexes (e.g. if the die face
-   is a 2 that die is locked if exactly 2 neighboring dice). 
+   is a 2 that die is locked if it has exactly 2 neighboring dice). 
    If a neighboring die to a locked die is removed, that die is no longer locked.
 
 4. **Win with 6 Locked Dice**: The player with the most locked dice the first time any
-   player reaches 6 locked dice is the winner (each player's locked dice
+   player reaches 6 locked dice at the end of their turn  is the winner (each player's locked dice
    count is displayed at the top right of the screen). The game is a draw
    if two or more players have the same number of locked dice (but at least 6).
 
